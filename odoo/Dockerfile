@@ -15,6 +15,7 @@ ARG GITHUB_USER
 ARG GITHUB_ACCESS_TOKEN
 ARG ENTERPRISE_ADDONS
 ARG THIRD_PARTY_ADDONS
+ARG CUSTOM_ADDONS
 ARG ODOO_RC
 ARG USE_REDIS
 ARG USE_S3
@@ -26,6 +27,7 @@ ENV ODOO_TAG=${ODOO_TAG} \
     GITHUB_ACCESS_TOKEN=${GITHUB_ACCESS_TOKEN} \
     ENTERPRISE_ADDONS=${ENTERPRISE_ADDONS} \
     THIRD_PARTY_ADDONS=${THIRD_PARTY_ADDONS} \
+    CUSTOM_ADDONS=${CUSTOM_ADDONS} \
     ODOO_RC=${ODOO_RC} \
     USE_REDIS=${USE_REDIS} \
     USE_S3=${USE_S3} \
@@ -46,6 +48,10 @@ RUN apt-get update && apt-get install -y \
     openssh-client \
     patch \
     xauth \
+    python3-dev \
+    default-libmysqlclient-dev \
+    build-essential \
+    pkg-config \
     # Clean up the apt cache to reduce the image size
     && rm -rf /var/lib/apt/lists/*
 
@@ -73,6 +79,31 @@ RUN mkdir -p ${ENTERPRISE_ADDONS} && \
 RUN if [ -n "$GITHUB_USER" ] && [ -n "$GITHUB_ACCESS_TOKEN" ]; then \
         git clone https://${GITHUB_USER}:${GITHUB_ACCESS_TOKEN}@github.com/odoo/enterprise.git ${ENTERPRISE_ADDONS} --depth 1 --branch ${ODOO_TAG} --single-branch --no-tags; \
     fi
+
+#-----------------------#
+#    Odoo CMI           #
+#-----------------------#
+
+# Create Custom addons directory
+RUN mkdir -p ${CUSTOM_ADDONS} && \
+    chown odoo:odoo -R ${CUSTOM_ADDONS}
+
+USER odoo
+
+# Clone CMI addons if user and token are present
+RUN if [ -n "$GITHUB_USER" ] && [ -n "$GITHUB_ACCESS_TOKEN" ]; then \
+        git clone https://${GITHUB_USER}:${GITHUB_ACCESS_TOKEN}@github.com/CMI-Pack/odoo-cmi.git ${CUSTOM_ADDONS} --depth 1 --branch production --single-branch --no-tags && \
+        cd ${CUSTOM_ADDONS} && \
+        git submodule init && \
+        git submodule update; \
+    fi
+
+USER root
+
+# Copy & Install PIP requirements
+RUN cp ${CUSTOM_ADDONS}/requirements.txt /tmp/requirements.txt && \
+    python3 -m pip install -r /tmp/requirements.txt && \
+    rm /tmp/requirements.txt
 
 #-------------------------#
 #    Odoo Extra Addons    #
