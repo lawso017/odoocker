@@ -23,8 +23,8 @@ ARG USE_SENTRY
 
 ENV ODOO_TAG=${ODOO_TAG} \
     LOG_PATH=${LOG_PATH} \
-    GITHUB_USER=${GITHUB_USER} \
-    GITHUB_ACCESS_TOKEN=${GITHUB_ACCESS_TOKEN} \
+    # GITHUB_USER=${GITHUB_USER} \
+    # GITHUB_ACCESS_TOKEN=${GITHUB_ACCESS_TOKEN} \
     ENTERPRISE_ADDONS=${ENTERPRISE_ADDONS} \
     THIRD_PARTY_ADDONS=${THIRD_PARTY_ADDONS} \
     CUSTOM_ADDONS=${CUSTOM_ADDONS} \
@@ -88,22 +88,16 @@ RUN if [ -n "$GITHUB_USER" ] && [ -n "$GITHUB_ACCESS_TOKEN" ]; then \
 RUN mkdir -p ${CUSTOM_ADDONS} && \
     chown odoo:odoo -R ${CUSTOM_ADDONS}
 
-USER odoo
-
 # Clone CMI addons if user and token are present
 RUN if [ -n "$GITHUB_USER" ] && [ -n "$GITHUB_ACCESS_TOKEN" ]; then \
-        git clone https://${GITHUB_USER}:${GITHUB_ACCESS_TOKEN}@github.com/CMI-Pack/odoo-cmi.git ${CUSTOM_ADDONS} --depth 1 --branch production --single-branch --no-tags && \
+        su odoo -s /bin/bash -c 'git clone https://${GITHUB_USER}:${GITHUB_ACCESS_TOKEN}@github.com/CMI-Pack/odoo-cmi.git ${CUSTOM_ADDONS} --depth 1 --branch production --single-branch --no-tags && \
         cd ${CUSTOM_ADDONS} && \
         git submodule init && \
-        git submodule update; \
+        git submodule update'; \
+        cp ${CUSTOM_ADDONS}/requirements.txt /tmp/requirements.txt && \
+        python3 -m pip install -r /tmp/requirements.txt && \
+        rm /tmp/requirements.txt; \
     fi
-
-USER root
-
-# Copy & Install PIP requirements
-RUN cp ${CUSTOM_ADDONS}/requirements.txt /tmp/requirements.txt && \
-    python3 -m pip install -r /tmp/requirements.txt && \
-    rm /tmp/requirements.txt
 
 #-------------------------#
 #    Odoo Extra Addons    #
