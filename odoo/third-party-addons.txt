@@ -14,5 +14,7 @@ public https://github.com/odoocker/server-tools.git sentry ${USE_SENTRY}
 # <public|private> <repo_url> <module1> <true|false> <module2> <true|false> ...
 
 # Public repositories
+public https://github.com/lawso017/purchase-workflow purchase_order_line_menu true
 
 # Private repositories
+private https://github.com/lawso017/odoo-quick dq_base true dq_website_v1 true
