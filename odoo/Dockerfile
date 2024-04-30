@@ -58,6 +58,7 @@ RUN apt-get update && apt-get install -y \
     libedit2 \
     liberror-perl \
     libfido2-1 \
+    libwebp-dev \
     libxmuu1 \
     openssh-client \
     patch \
